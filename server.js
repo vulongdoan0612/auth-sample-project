@@ -22,7 +22,7 @@ app.use(express.json());
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use("/api", jobRouter);
+app.use("/", jobRouter);
 app.use("/", userRouter);
 app.use("/", employerRouter);
 

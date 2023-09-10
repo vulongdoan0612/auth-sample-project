@@ -14,7 +14,7 @@ const jobSchema = new mongoose.Schema(
         description: { type: String },
         requirement: { type: String },
         anotherInformation: { type: String },
-        author:{type:String, required: true}
+        author:{type:String, required: true},
 
     },
     { timestamps: true }

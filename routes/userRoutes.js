@@ -9,6 +9,7 @@ import { initializeApp } from "firebase/app";
 import { getStorage, ref, getDownloadURL, uploadBytesResumable, deleteObject } from "firebase/storage";
 import config from "../config/firebase.js"
 import multer from "multer";
+import Apply from "../models/applyModel.js";
 
 
 initializeApp(config.firebaseConfig);
@@ -279,5 +280,22 @@ userRouter.delete('/delete-cv', checkAccessToken, async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+userRouter.get('/applied-job', checkAccessToken, async (req, res) => {
+  try {
+    const userId = req.user.id; // Lấy thông tin người dùng từ AccessToken
 
+      // Tìm tất cả các ứng viên cho công việc có jobId cụ thể
+      const applicants = await Apply.find({ applicant: userId });
+
+      if (!applicants || applicants.length === 0) {
+          return res.status(404).json({ error: 'Bạn chưa ứng tuyển' });
+      }
+
+      res.status(200).json({ applicants: applicants });
+
+  } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: error.message });
+  }
+});
 export default userRouter;
