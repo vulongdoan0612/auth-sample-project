@@ -4,7 +4,6 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import nodemailer from 'nodemailer';
 import { v4 as uuidv4 } from 'uuid';
-import { uploadDirectory } from "../middleware/upload.js";
 import { checkAccessToken } from "../middleware/authMiddleware.js";
 import { initializeApp } from "firebase/app";
 import { getStorage, ref, getDownloadURL, uploadBytesResumable, deleteObject } from "firebase/storage";
@@ -107,6 +106,44 @@ userRouter.post('/reset-password', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+userRouter.put('/change-profile', checkAccessToken, upload.single('avatar'), async (req, res) => {
+  const { username,userInfo  } = req.body;
+  try {
+    const userId = req.user.id;
+    const updatedUserData = {};
+
+    // Kiểm tra xem người dùng đã tải lên hình ảnh avatar hay chưa
+    if (req.file) {
+      const user = await User.findById(userId);
+      const storageRef = ref(storage, `user-info/${user.email}/${req.file.originalname}`);
+      const metadata = {
+        contentType: req.file.mimetype,
+      };
+      const snapshot = await uploadBytesResumable(storageRef, req.file.buffer, metadata);
+      //by using uploadBytesResumable we can control the progress of uploading like pause, resume, cancel
+
+      // Grab the public URL
+      const downloadURL = await getDownloadURL(snapshot.ref);
+      updatedUserData.avatar = downloadURL;
+    }
+
+    // Kiểm tra xem người dùng đã cung cấp tên người dùng mới hay chưa
+    if (username) {
+      updatedUserData.username = username;
+    }
+    console.log(userInfo)
+    if (userInfo) {
+      updatedUserData.userInfo = userInfo;
+    }
+    console.log(updatedUserData)
+    const updatedUser = await User.findByIdAndUpdate(userId, updatedUserData, { new: true });
+    res.status(200).json({ message: 'Profile updated successfully.', user: updatedUser });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 userRouter.post('/forgot-password', async (req, res) => {
   const { email } = req.body;
 

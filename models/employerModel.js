@@ -7,9 +7,10 @@ const employerSchema = new mongoose.Schema({
   email: { type: String, required: true },
   password: { type: String, required: true },
   isAdmin: { type: Boolean, default: false },
-  confirmationCode: {
-    type: String, default: null
-  }
+  avatar: { type: String, default: null },
+  description: { type: String, default: null },
+  confirmationCode: { type: String, default: null },
+  employerInfo: [{ type: Object }],
 });
 
 employerSchema.methods.comparePassword = async function (password) {
