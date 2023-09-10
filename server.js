@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import mongoose from "mongoose";
 import jobRouter from "./routes/jobRoutes.js";
 import userRouter from "./routes/userRoutes.js";
+import employerRouter from "./routes/employerRoutes.js";
 
 dotenv.config();
 
@@ -23,6 +24,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use("/api", jobRouter);
 app.use("/", userRouter);
+app.use("/", employerRouter);
+
 app.get('/', async (req, res) => {
     res.json('hello');
 });

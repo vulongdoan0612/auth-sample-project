@@ -8,7 +8,9 @@ const userSchema = new mongoose.Schema({
   isAdmin: { type: Boolean, default: false },
   confirmationCode: {
     type: String, default: null
-  }
+  },
+  cvName:{type:String,default:null},
+  cv: { type: String, default: null }
 });
 
 userSchema.methods.comparePassword = async function (password) {
