@@ -10,6 +10,7 @@ const jobSchema = new mongoose.Schema(
         address: { type: String },
         rank: { type: String },
         deadline: { type: String },
+        type:{type:String},
         welfare: [{ type: Object }],
         description: { type: String },
         requirement: { type: String },

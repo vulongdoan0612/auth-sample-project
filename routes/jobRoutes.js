@@ -85,6 +85,58 @@ jobRouter.get('/get-list-apply-job', checkAccessToken, async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+jobRouter.get('/get-all-apply-job', async (req, res) => {
+    try {
+        const { pageSize, currentPage, filter, type } = req.query;
 
+        // Kiểm tra filter để xác định cách sắp xếp
+        let sortOption = { createdAt: -1 }; // Mặc định sắp xếp theo thời gian mới nhất
+
+        if (filter === 'newest') {
+            sortOption = { createdAt: -1 }; // Sắp xếp theo thời gian mới nhất
+        } else if (filter === 'oldest') {
+            sortOption = { createdAt: 1 }; // Sắp xếp theo thời gian cũ nhất
+        }
+
+        // Số bản ghi bỏ qua (phân trang)
+        const skipCount = (currentPage - 1) * pageSize;
+
+        // Sử dụng sortOption để sắp xếp kết quả
+        const allJobs = await Job.find({type:type})
+            .sort(sortOption)
+            .skip(skipCount)
+            .limit(Number(pageSize));
+
+        if (!allJobs || allJobs.length === 0) {
+            return res.status(404).json({ error: 'Không tìm thấy công việc nào.' });
+        }
+
+        res.status(200).json({ allJobs });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: error.message });
+    }
+});
+jobRouter.post('/search-jobs',  async (req, res) => {
+    try {
+        const { keyword } = req.query;
+
+        // Sử dụng biểu thức chính quy để tìm kiếm các công việc có tiêu đề chứa keyword
+        const regex = new RegExp(keyword, 'i'); // 'i' để tìm kiếm không phân biệt hoa thường
+        console.log(keyword)
+        const matchedJobs = await Job.find({ title: regex });
+
+        if (!matchedJobs || matchedJobs.length === 0) {
+            return res.status(404).json({ error: 'Không tìm thấy công việc nào.' });
+        }
+
+        res.status(200).json({ matchedJobs });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: error.message });
+    }
+});
 
 export default jobRouter;

@@ -145,6 +145,7 @@ employerRouter.post('/create-job-employer', checkAccessToken, async (req, res) =
       welfare,
       description,
       requirement,
+      type,
       anotherInformation,
     } = req.body;
     const userId = req.user.id;
@@ -157,7 +158,7 @@ employerRouter.post('/create-job-employer', checkAccessToken, async (req, res) =
       address,
       rank,
       deadline,
-      welfare,
+      welfare,type,
       description,
       requirement,
       anotherInformation,
