@@ -9,14 +9,15 @@ import cors from "cors";
 dotenv.config();
 
 mongoose
-    .connect(process.env.MONGODB_URI)
-    .then(() => {
-        console.log("Connected to database");
-    })
-    .catch((err) => {
-        console.log(err.message);
-    });
+.connect(process.env.MONGODB_URI)
+.then(() => {
+    console.log("Connected to database");
+})
+.catch((err) => {
+    console.log(err.message);
+});
 
+app.use(cors());
 const app = express();
 
 app.use(express.json());
@@ -26,6 +27,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/", jobRouter);
 app.use("/", userRouter);
 app.use("/", employerRouter);
+
 const corsOptions = {
     origin: 'http://localhost:3000/', // Đổi thành domain của ứng dụng web frontend của bạn
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
