@@ -4,6 +4,7 @@ import mongoose from "mongoose";
 import jobRouter from "./routes/jobRoutes.js";
 import userRouter from "./routes/userRoutes.js";
 import employerRouter from "./routes/employerRoutes.js";
+import cors from "cors";
 
 dotenv.config();
 
@@ -25,6 +26,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/", jobRouter);
 app.use("/", userRouter);
 app.use("/", employerRouter);
+app.use(cors({origin:true}))
 
 app.get('/', async (req, res) => {
     res.json('hello');
