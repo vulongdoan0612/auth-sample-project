@@ -54,7 +54,7 @@ userRouter.post('/login', async (req, res) => {
       const refreshToken = jwt.sign({ id: user._id }, 'YourRefreshSecretKey', {
         expiresIn: '7d',
       });
-      res.status(200).json({ token, refreshToken });
+      res.status(200).json({ token, refreshToken,role:'user' });
     } else {
       res.status(401).json({ message: 'Invalid password.' });
     }

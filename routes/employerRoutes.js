@@ -49,7 +49,7 @@ employerRouter.post('/login-employer', async (req, res) => {
       const refreshToken = jwt.sign({ id: employer._id }, 'YourRefreshSecretKey', {
         expiresIn: '7d',
       });
-      res.status(200).json({ token, refreshToken });
+      res.status(200).json({ token, refreshToken,role:'business' });
     } else {
       res.status(401).json({ message: 'Invalid password.' });
     }
