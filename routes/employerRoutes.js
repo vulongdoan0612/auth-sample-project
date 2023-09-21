@@ -49,7 +49,7 @@ employerRouter.post('/login-employer', async (req, res) => {
       const refreshToken = jwt.sign({ id: employer._id }, 'YourRefreshSecretKey', {
         expiresIn: '7d',
       });
-      res.status(200).json({ token, refreshToken,role:'business' });
+      res.status(200).json({ token, refreshToken, role: 'business' });
     } else {
       res.status(401).json({ message: 'Invalid password.' });
     }
@@ -63,11 +63,11 @@ employerRouter.put('/change-profile-employer', checkAccessToken, upload.single('
     companyName,
     welfare,
     description,
+    anotherInformation,
     employerInfo
   } = req.body; try {
     const employerId = req.user.id;
     const updateEmployer = {};
-    console.log(employerId)
     // Kiểm tra xem người dùng đã tải lên hình ảnh avatar hay chưa
     if (req.file) {
       const employer = await Employer.findById(employerId);
@@ -103,7 +103,9 @@ employerRouter.put('/change-profile-employer', checkAccessToken, upload.single('
     if (employerInfo) {
       updateEmployer.employerInfo = employerInfo;
     }
-   
+    if (anotherInformation) {
+      updateEmployer.anotherInformation = anotherInformation;
+    }
     const updatedUser = await Employer.findByIdAndUpdate(employerId, updateEmployer, { new: true });
     res.status(200).json({ message: 'Profile updated successfully.', employer: updatedUser });
   } catch (error) {
@@ -137,28 +139,29 @@ employerRouter.post('/create-job-employer', checkAccessToken, async (req, res) =
     const {
       title,
       company,
-      slug,
       salary,
       address,
       rank,
       deadline,
       welfare,
       description,
-      requirement,
+      requirement, reason,
       type,
       anotherInformation,
     } = req.body;
     const userId = req.user.id;
+    const infoEmployer = await Employer.findOne({ _id: userId })
     // Tạo một bài viết mới
     const job = new Job({
       title,
-      company,
-      slug,
+      company, reason,
+      slug: company + title + rank,
       salary,
       address,
       rank,
       deadline,
-      welfare,type,
+      avatar: infoEmployer?.avatar,
+      welfare, type,
       description,
       requirement,
       anotherInformation,
@@ -178,10 +181,10 @@ employerRouter.put('/edit-job-employer', checkAccessToken, async (req, res) => {
   const {
     title,
     company,
-    slug,
     salary,
     address,
     rank,
+    reason,
     deadline,
     welfare,
     description,
@@ -194,7 +197,6 @@ employerRouter.put('/edit-job-employer', checkAccessToken, async (req, res) => {
     const userId = req.user.id;
     const updatedPostJob = {};
     // if(userId===)
-    console.log(querySlug, userId)
     const existingJob = await Job.findOne({ slug: querySlug });
     if (!existingJob) {
       return res.status(404).json({ message: 'Bài viết không tồn tại.' });
@@ -208,9 +210,7 @@ employerRouter.put('/edit-job-employer', checkAccessToken, async (req, res) => {
     if (company) {
       updatedPostJob.company = company;
     }
-    if (slug) {
-      updatedPostJob.slug = slug;
-    }
+
     if (salary) {
       updatedPostJob.salary = salary;
     }
@@ -235,10 +235,12 @@ employerRouter.put('/edit-job-employer', checkAccessToken, async (req, res) => {
     if (anotherInformation) {
       updatedPostJob.anotherInformation = anotherInformation;
     }
+    if (reason) {
+      updatedPostJob.reason = reason;
+    }
     if (existingJob.author.toString() !== userId) {
       return res.status(403).json({ message: 'Bạn không có quyền chỉnh sửa bài viết này.' });
     }
-    console.log(updatedPostJob)
     const updatedJob = await Job.findOneAndUpdate({ slug: querySlug, author: userId }, updatedPostJob, { new: true });
     res.status(200).json({ message: 'Profile updated successfully.', job: updatedJob });
   } catch (error) {
@@ -253,7 +255,6 @@ employerRouter.delete('/delete-job-employer', checkAccessToken, async (req, res)
 
     // Tìm bài viết dựa trên slug và kiểm tra xem author có phải là userId hay không
     const existingJob = await Job.findOne({ slug: querySlug, author: userId });
-    console.log(userId, querySlug)
     if (!existingJob) {
       return res.status(404).json({ message: 'Bài viết không tồn tại hoặc bạn không có quyền xóa nó.' });
     }

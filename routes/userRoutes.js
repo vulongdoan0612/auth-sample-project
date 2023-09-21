@@ -10,6 +10,7 @@ import { getStorage, ref, getDownloadURL, uploadBytesResumable, deleteObject } f
 import config from "../config/firebase.js"
 import multer from "multer";
 import Apply from "../models/applyModel.js";
+import Job from "../models/jobModel.js";
 
 
 initializeApp(config.firebaseConfig);
@@ -44,17 +45,15 @@ userRouter.post('/login', async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: 'User not found.' });
     }
-    console.log(password, user)
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (isPasswordValid) {
       const token = jwt.sign({ id: user._id }, 'VinalinkGroup!2020', {
         expiresIn: '1h',
       });
-      console.log(token)
       const refreshToken = jwt.sign({ id: user._id }, 'YourRefreshSecretKey', {
         expiresIn: '7d',
       });
-      res.status(200).json({ token, refreshToken,role:'user' });
+      res.status(200).json({ token, refreshToken, role: 'user' });
     } else {
       res.status(401).json({ message: 'Invalid password.' });
     }
@@ -108,7 +107,7 @@ userRouter.post('/reset-password', async (req, res) => {
   }
 });
 userRouter.put('/change-profile', checkAccessToken, upload.single('avatar'), async (req, res) => {
-  const { username,userInfo  } = req.body;
+  const { username, userInfo } = req.body;
   try {
     const userId = req.user.id;
     const updatedUserData = {};
@@ -132,11 +131,9 @@ userRouter.put('/change-profile', checkAccessToken, upload.single('avatar'), asy
     if (username) {
       updatedUserData.username = username;
     }
-    console.log(userInfo)
     if (userInfo) {
       updatedUserData.userInfo = userInfo;
     }
-    console.log(updatedUserData)
     const updatedUser = await User.findByIdAndUpdate(userId, updatedUserData, { new: true });
     res.status(200).json({ message: 'Profile updated successfully.', user: updatedUser });
   } catch (error) {
@@ -221,7 +218,6 @@ userRouter.post('/upload-cv', checkAccessToken, upload.single('cv'), async (req,
     }
 
     // Lấy thông tin người dùng từ JWT hoặc session
-    console.log(req.file)
     const storageRef = ref(storage, `user-cv/${user.email}/${req.file.originalname}`);
     const metadata = {
       contentType: req.file.mimetype,
@@ -280,22 +276,48 @@ userRouter.delete('/delete-cv', checkAccessToken, async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
 userRouter.get('/applied-job', checkAccessToken, async (req, res) => {
   try {
     const userId = req.user.id; // Lấy thông tin người dùng từ AccessToken
 
-      // Tìm tất cả các ứng viên cho công việc có jobId cụ thể
-      const applicants = await Apply.find({ applicant: userId });
+    // Tìm tất cả các ứng viên cho công việc có jobId cụ thể
+    const applicants = await Apply.find({ applicant: userId });
 
-      if (!applicants || applicants.length === 0) {
-          return res.status(404).json({ error: 'Bạn chưa ứng tuyển' });
+    if (!applicants || applicants.length === 0) {
+      return res.status(200).json({ error: 'Bạn chưa ứng tuyển' });
+    }
+
+    // Tạo mảng các công việc đã ứng tuyển
+    const jobs = [];
+
+    for (const applicant of applicants) {
+      // Tìm thông tin công việc thông qua jobId
+      const job = await Job.findById(applicant.job);
+
+      // Kiểm tra nếu công việc tồn tại thì thêm vào mảng
+      if (job) {
+        const jobWithApplicantInfo = {
+          _id: applicant._id,
+          job: job,
+          applicant: applicant.applicant,
+          coverLetter: applicant.coverLetter,
+          cv: applicant.cv,
+          appliedAt: applicant.appliedAt,
+          createdAt: applicant.createdAt,
+          updatedAt: applicant.updatedAt,
+        };
+
+        jobs.push(jobWithApplicantInfo);
       }
+    }
 
-      res.status(200).json({ applicants: applicants });
+    res.status(200).json({ applicants: jobs });
 
   } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: error.message });
+    console.error(error);
+    res.status(500).json({ error: error.message });
   }
 });
+
 export default userRouter;

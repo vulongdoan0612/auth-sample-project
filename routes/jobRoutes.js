@@ -11,30 +11,34 @@ const jobRouter = express.Router();
 jobRouter.post('/apply-job', checkAccessToken, async (req, res) => {
     try {
 
-        const { coverLetter } = req.body;
-        const jobId = req.query.jobId;
-        console.log(req.query, 'asdasdasd')
+        const { coverLetter, jobId } = req.body;
         const applicantId = req.user.id; // Lấy thông tin người dùng từ token hoặc session
-        console.log(applicantId)
         const user = await User.findById(applicantId);
         if (!user) {
-            return res.status(500).json({ message: "Bạn là doanh nghiệp không thể ứng tuyển" });
+            return res.status(200).json({ message: "Bạn là doanh nghiệp không thể ứng tuyển" });
             ;
         }
-        const applyExit = await Apply.findOne({applicant:user._id});
-        if(applyExit){
-            return res.status(500).json({ message: "Bạn đã ứng tuến rồi" });
+        const applyExit = await Apply.findOne({ applicant: user._id, job: jobId });
+        if (applyExit) {
+            return res.status(200).json({ message: "Bạn đã ứng tuyển rồi" });
         }
+        if (user.cv === null) {
+            return res.status(200).json({ message: "Bạn không có CV" });
+
+        }
+        const userWithoutPassword = { ...user.toObject() };
+        delete userWithoutPassword.password;
+
         // Tạo một bản ghi mới trong schema Application
         const application = new Apply({
             job: jobId,
             applicant: applicantId,
             coverLetter,
+            applier: userWithoutPassword,
             cv: user.cv,
-            email:user.email,
-            phone:user.userInfo.phone
+            email: user.email,
+            phone: user.userInfo.phone
         });
-        console.log(application)
         // Lưu thông tin ứng tuyển vào cơ sở dữ liệu
         await application.save();
 
@@ -49,12 +53,10 @@ jobRouter.put('/edit-apply-job', checkAccessToken, async (req, res) => {
     try {
         const querySlug = req.query.jobId;
         const infoJob = await Job.findOne({ _id: querySlug });
-        console.log(infoJob)
         if (!infoJob) {
             return res.status(404).json({ error: "apply khogn6 tồn tại" });
         }
         const infoJobApply = await Apply.findOne({ job: infoJob._id });
-        console.log(infoJobApply)
         if (!infoJobApply) {
             return res.status(404).json({ error: "Thông tin ứng tuyển không tồn tại" });
         }
@@ -70,15 +72,57 @@ jobRouter.put('/edit-apply-job', checkAccessToken, async (req, res) => {
 jobRouter.get('/get-list-apply-job', checkAccessToken, async (req, res) => {
     try {
         const jobId = req.query.jobId;
+        const { pageSize, currentPage, filter } = req.query;
+        let sortOption = { createdAt: -1 }; // Mặc định sắp xếp theo thời gian mới nhất
 
-        // Tìm tất cả các ứng viên cho công việc có jobId cụ thể
-        const applicants = await Apply.find({ job: jobId });
-
-        if (!applicants || applicants.length === 0) {
-            return res.status(404).json({ error: 'Không tìm thấy ứng viên cho công việc này.' });
+        if (filter === 'newest') {
+            sortOption = { createdAt: -1 }; // Sắp xếp theo thời gian mới nhất
+        } else if (filter === 'oldest') {
+            sortOption = { createdAt: 1 }; // Sắp xếp theo thời gian cũ nhất
         }
 
-        res.status(200).json({ applicants: applicants });
+        const skipCount = (currentPage - 1) * pageSize;
+
+        // Tìm tất cả các ứng viên cho công việc có jobId cụ thể
+        const applicants = await Apply.find({ job: jobId }).sort(sortOption)
+            .skip(skipCount)
+            .limit(Number(pageSize));;
+
+        if (!applicants || applicants.length === 0) {
+            return res.status(200).json({ error: 'Không tìm thấy ứng viên cho công việc này.' });
+        }
+
+        res.status(200).json({ data: applicants });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: error.message });
+    }
+});
+jobRouter.get('/get-list-create-job', checkAccessToken, async (req, res) => {
+    try {
+        const employerId = req.user.id;
+        const { pageSize, currentPage, filter } = req.query;
+        let sortOption = { createdAt: -1 }; // Mặc định sắp xếp theo thời gian mới nhất
+
+        if (filter === 'newest') {
+            sortOption = { createdAt: -1 }; // Sắp xếp theo thời gian mới nhất
+        } else if (filter === 'oldest') {
+            sortOption = { createdAt: 1 }; // Sắp xếp theo thời gian cũ nhất
+        }
+
+        const skipCount = (currentPage - 1) * pageSize;
+        // Tìm tất cả các ứng viên cho công việc có jobId cụ thể
+        const listJob = await Job.find({ author: employerId }).sort(sortOption)
+            .skip(skipCount)
+            .limit(Number(pageSize));
+        const totalRecords = await Job.countDocuments({ author: employerId });
+
+        if (!listJob || listJob.length === 0) {
+            return res.status(200).json({ error: 'Không tìm thấy công việc nào được tạo' });
+        }
+
+        res.status(200).json({ listJob: listJob, total: totalRecords });
 
     } catch (error) {
         console.error(error);
@@ -88,7 +132,6 @@ jobRouter.get('/get-list-apply-job', checkAccessToken, async (req, res) => {
 jobRouter.get('/get-all-apply-job', async (req, res) => {
     try {
         const { pageSize, currentPage, filter, type } = req.query;
-
         // Kiểm tra filter để xác định cách sắp xếp
         let sortOption = { createdAt: -1 }; // Mặc định sắp xếp theo thời gian mới nhất
 
@@ -100,35 +143,39 @@ jobRouter.get('/get-all-apply-job', async (req, res) => {
 
         // Số bản ghi bỏ qua (phân trang)
         const skipCount = (currentPage - 1) * pageSize;
+        let query = {};
 
-        // Sử dụng sortOption để sắp xếp kết quả
-        const allJobs = await Job.find({type:type})
+        if (!!type && type !== "") {
+            const types = type.split('&');
+            query['type'] = { $all: types };
+        }
+        const totalRecords = await Job.countDocuments(query);        // Sử dụng sortOption để sắp xếp kết quả
+        const allJobs = await Job.find(query)
             .sort(sortOption)
             .skip(skipCount)
             .limit(Number(pageSize));
 
         if (!allJobs || allJobs.length === 0) {
-            return res.status(404).json({ error: 'Không tìm thấy công việc nào.' });
+            return res.status(200).json({ error: 'Không tìm thấy công việc nào.' });
         }
 
-        res.status(200).json({ allJobs });
+        res.status(200).json({ allJobs, total: totalRecords });
 
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: error.message });
     }
 });
-jobRouter.post('/search-jobs',  async (req, res) => {
+jobRouter.post('/search-jobs', async (req, res) => {
     try {
         const { keyword } = req.query;
 
         // Sử dụng biểu thức chính quy để tìm kiếm các công việc có tiêu đề chứa keyword
         const regex = new RegExp(keyword, 'i'); // 'i' để tìm kiếm không phân biệt hoa thường
-        console.log(keyword)
         const matchedJobs = await Job.find({ title: regex });
 
         if (!matchedJobs || matchedJobs.length === 0) {
-            return res.status(404).json({ error: 'Không tìm thấy công việc nào.' });
+            return res.status(200).json({ error: 'Không tìm thấy công việc nào.' });
         }
 
         res.status(200).json({ matchedJobs });
@@ -138,5 +185,24 @@ jobRouter.post('/search-jobs',  async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+jobRouter.get('/get-all-type', async (req, res) => {
+    try {
+        const jobs = await Job.find({}, 'type');  // Lấy ra tất cả các loại công việc
 
+        // Duyệt qua từng công việc, lấy ra các loại và chỉ trả về một lần cho mỗi loại
+        const allTypes = jobs.reduce((types, job) => {
+            job.type.forEach(type => {
+                if (!types.includes(type)) {
+                    types.push(type);
+                }
+            });
+            return types;
+        }, []);
+
+        res.status(200).json({ types: allTypes });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: error.message });
+    }
+});
 export default jobRouter;

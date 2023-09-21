@@ -9,10 +9,11 @@ const userSchema = new mongoose.Schema({
   confirmationCode: {
     type: String, default: null
   },
-  avatar:{type:String,default:null},
-  cvName:{type:String,default:null},
+  avatar: { type: String, default: null },
+  cvName: { type: String, default: null },
   cv: { type: String, default: null },
-  userInfo: [{ type: Object }]
+  userInfo: { type: Object },
+  role: { type: String, default: 'user' }
 
 });
 

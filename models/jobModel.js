@@ -3,20 +3,21 @@ import mongoose from "mongoose";
 const jobSchema = new mongoose.Schema(
     {
         title: { type: String },
-        email:{type:String},
+        email: { type: String },
         company: { type: String },
-        slug: { type: String, unique: true },
+        slug: { type: String },
+        avatar: { type: String },
         salary: { type: String },
         address: { type: String },
         rank: { type: String },
+        reason: [{ type: Object }],//Top 3 reasons to join us
         deadline: { type: String },
-        type:{type:String},
-        welfare: [{ type: Object }],
-        description: { type: String },
-        requirement: { type: String },
-        anotherInformation: { type: String },
-        author:{type:String, required: true},
-
+        type: [{ type: String }], //Skills
+        welfare: { type: String }, // Why you'll love working here
+        description: { type: String },//Job description
+        requirement: { type: String },//Your skills and experience
+        anotherInformation: [{ type: Object }],
+        author: { type: String },
     },
     { timestamps: true }
 );
