@@ -151,6 +151,26 @@ employerRouter.post('/create-job-employer', checkAccessToken, async (req, res) =
     } = req.body;
     const userId = req.user.id;
     const infoEmployer = await Employer.findOne({ _id: userId })
+    if (
+      !infoEmployer ||
+      !infoEmployer.companyName ||
+      !infoEmployer.address ||
+      !infoEmployer.email ||
+      !infoEmployer.avatar ||
+      !infoEmployer.anotherInformation ||
+      !infoEmployer.anotherInformation.phone ||
+      !infoEmployer.anotherInformation.major ||
+      !infoEmployer.anotherInformation.countEmploy ||
+      !infoEmployer.anotherInformation.workTime ||
+      !infoEmployer.anotherInformation.ot ||
+      !infoEmployer.anotherInformation.anotherLocation ||
+      !infoEmployer.anotherInformation.birthdate ||
+      !infoEmployer.anotherInformation.fax ||
+      !infoEmployer.anotherInformation.address ||
+      !infoEmployer.anotherInformation.country
+    ) {
+      return res.status(200).json({ error: 'Vui lòng điền đầy đủ thông tin cá nhân trước khi tạo bài viết.' });
+    }
     // Tạo một bài viết mới
     const job = new Job({
       title,

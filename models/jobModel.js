@@ -10,13 +10,13 @@ const jobSchema = new mongoose.Schema(
         salary: { type: String },
         address: { type: String },
         rank: { type: String },
-        reason: [{ type: Object }],//Top 3 reasons to join us
+        reason: { type: String },//Top 3 reasons to join us
         deadline: { type: String },
         type: [{ type: String }], //Skills
         welfare: { type: String }, // Why you'll love working here
         description: { type: String },//Job description
         requirement: { type: String },//Your skills and experience
-        anotherInformation: [{ type: Object }],
+        anotherInformation: { type: Object },
         author: { type: String },
     },
     { timestamps: true }
