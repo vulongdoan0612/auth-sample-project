@@ -212,8 +212,8 @@ employerRouter.put('/edit-job-employer', checkAccessToken, async (req, res) => {
     anotherInformation,
   } = req.body;
   try {
-    const querySlug = req.query.slug;
-
+    const querySlug = req.query.querySlug;
+    console.log(querySlug);
     const userId = req.user.id;
     const updatedPostJob = {};
     // if(userId===)
