@@ -39,7 +39,7 @@ employerRouter.post('/login-employer', async (req, res) => {
   try {
     const employer = await Employer.findOne({ email });
     if (!employer) {
-      return res.status(404).json({ message: 'employer not found.' });
+      return res.status(200).json({ message: 'Employer not found. Please sign up !',status:'NOT_FOUND' });
     }
     const isPasswordValid = await bcrypt.compare(password, employer.password);
     if (isPasswordValid) {
@@ -49,9 +49,11 @@ employerRouter.post('/login-employer', async (req, res) => {
       const refreshToken = jwt.sign({ id: employer._id }, 'YourRefreshSecretKey', {
         expiresIn: '7d',
       });
-      res.status(200).json({ token, refreshToken, role: 'business' });
+      res
+        .status(200)
+        .json({ token, refreshToken, role: "business", companyName: employer.companyName });
     } else {
-      res.status(401).json({ message: 'Invalid password.' });
+      res.status(200).json({ message: 'Invalid password. Please try again.',status:'WRONG_PASSWORD' });
     }
   } catch (error) {
     res.status(500).json({ error: error.message });
